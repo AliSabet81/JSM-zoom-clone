@@ -27,7 +27,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <ClerkProvider>
+      <ClerkProvider
+        appearance={{
+          layout: {
+            logoImageUrl: "/icons/yoom-logo.svg",
+            socialButtonsVariant: "iconButton",
+          },
+          variables: {
+            colorText: "#fff",
+            colorPrimary: "#0E78F9",
+            colorBackground: "#1c1f2e",
+            colorInputBackground: "#252a41",
+            colorInputText: "#fff",
+          },
+        }}
+      >
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased bg-dark-2`}
         >
