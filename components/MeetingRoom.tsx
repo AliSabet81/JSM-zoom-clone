@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LayoutList } from "lucide-react";
 
 type CallLayoutType = "grid" | "speaker-left" | "speaker-right";
 
@@ -50,14 +51,17 @@ const MeetingRoom = () => {
       <div className="fixed bottom-0 flex w-full items-center justify-center gap-5">
         <CallControls />
         <DropdownMenu>
-          <DropdownMenuTrigger>Open</DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Billing</DropdownMenuItem>
-            <DropdownMenuItem>Team</DropdownMenuItem>
-            <DropdownMenuItem>Subscription</DropdownMenuItem>
+          <div className="flex items-center">
+            <DropdownMenuTrigger className="cursor-pointer rounded-2xl bg-[#19232d] px-4 py-2 hover:bg-[#4c535b]">
+              <LayoutList size={20} className="text-white" />
+            </DropdownMenuTrigger>
+          </div>
+          <DropdownMenuContent className="border-dark-1 bg-dark-1 text-white">
+            {["grid", "speaker-left", "speaker-right"].map((item, index) => (
+              <div key={index}>
+                <DropdownMenuItem>{item}</DropdownMenuItem>
+              </div>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
