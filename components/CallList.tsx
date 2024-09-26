@@ -1,7 +1,11 @@
 "use client";
 
 import { useGetCalls } from "@/hooks/useGetCalls";
-import { Call, CallRecording } from "@stream-io/video-react-sdk";
+import {
+  Call,
+  CallRecording,
+  ListRecordingsResponse,
+} from "@stream-io/video-react-sdk";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import MeetingCard from "./MeetingCard";
@@ -13,6 +17,7 @@ const CallList = ({ type }: { type: "ended" | "upcoming" | "recording" }) => {
     useGetCalls();
   const router = useRouter();
   const [recordings, setRecordings] = useState<CallRecording[]>([]);
+  const [loadingRecordings, setLoadingRecordings] = useState(false);
 
   const { toast } = useToast();
 
@@ -20,26 +25,23 @@ const CallList = ({ type }: { type: "ended" | "upcoming" | "recording" }) => {
     switch (type) {
       case "ended":
         return endedCalls;
-      case "recording": {
+      case "recording":
         return recordings;
-      }
-      case "upcoming": {
+      case "upcoming":
         return upcomingCalls;
-      }
       default:
         return [];
     }
   };
+
   const getNoCallsMessage = () => {
     switch (type) {
       case "ended":
         return "No Previous Calls";
-      case "recording": {
+      case "recording":
         return "No Recordings";
-      }
-      case "upcoming": {
+      case "upcoming":
         return "No Upcoming Calls";
-      }
       default:
         return "";
     }
@@ -47,43 +49,54 @@ const CallList = ({ type }: { type: "ended" | "upcoming" | "recording" }) => {
 
   useEffect(() => {
     const fetchRecordings = async () => {
+      setLoadingRecordings(true);
       try {
-        const callData = await Promise.all(
+        const callData = await Promise.allSettled(
           callRecordings.map((meeting) => meeting.queryRecordings())
         );
 
-        const recordings = await callData
-          .filter((call) => call.recordings.length > 0)
-          .flatMap((call) => call.recordings);
+        const successfulRecordings = callData
+          .filter(
+            (
+              result
+            ): result is PromiseFulfilledResult<ListRecordingsResponse> =>
+              result.status === "fulfilled" &&
+              result.value.recordings?.length > 0
+          )
+          .flatMap((result) => result.value.recordings);
 
-        setRecordings(recordings);
+        setRecordings(successfulRecordings);
       } catch (error) {
-        toast({ title: "Try again later" });
+        toast({ title: "Failed to load recordings. Please try again later." });
+      } finally {
+        setLoadingRecordings(false);
       }
     };
 
     if (type === "recording") fetchRecordings();
-  }, [type, callRecordings]);
+  }, [type, callRecordings, toast]);
 
   const calls = getCalls();
   const noCallsMessage = getNoCallsMessage();
 
-  if (isLoading) return <Loader />;
+  if (isLoading || (type === "recording" && loadingRecordings)) {
+    return <Loader />;
+  }
 
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
       {calls && calls.length > 0 ? (
         calls.map((meeting: Call | CallRecording) => (
           <MeetingCard
-            key={(meeting as Call)?.id}
+            key={(meeting as Call)?.id || (meeting as CallRecording).filename}
             title={
-              (meeting as Call).state?.custom?.description?.substring(0, 26) ||
+              (meeting as Call)?.state?.custom?.description?.substring(0, 26) ||
               (meeting as CallRecording)?.filename?.substring(0, 20) ||
               "Personal Meeting"
             }
             date={
-              (meeting as Call).state?.startedAt?.toLocaleString() ||
-              (meeting as CallRecording).start_time.toLocaleString()
+              (meeting as Call)?.state?.startsAt?.toLocaleString() ||
+              new Date((meeting as CallRecording).start_time).toLocaleString()
             }
             icon={
               type === "ended"
